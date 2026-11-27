@@ -7,10 +7,9 @@
   const LA = window.LoveArt;
   const CFG = window.LOVE_CONFIG;
   const L = LA.LAYOUT;
-  const COUPLE_ASSET = "assets/main.png";
-  const COUPLE_IMAGE_W = 426;
-  const COUPLE_IMAGE_H = 366;
-  const COUPLE_FOOT_LINE = 347; // where the shoes meet the ground in assets/main.png
+  const COUPLE_ASSET = "assets/main.webp";
+  const COUPLE_IMAGE_W = 246;
+  const COUPLE_IMAGE_H = 279;
 
   const $ = (sel, root) => (root || document).querySelector(sel);
   const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
@@ -420,13 +419,13 @@
   }
 
   function buildImageCouple(layer) {
-    const height = 220;
+    const height = 210;
     const width = height * (COUPLE_IMAGE_W / COUPLE_IMAGE_H);
-    const top = -height * (COUPLE_FOOT_LINE / COUPLE_IMAGE_H);
     layer.innerHTML = `<g class="couple-root">
       <g class="couple-bob">
         <g class="couple-sticker">
-          <image href="${COUPLE_ASSET}" x="${(-width / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${width.toFixed(1)}" height="${height}" preserveAspectRatio="xMidYMid meet"/>
+          <ellipse cx="1" cy="4" rx="${(width * 0.38).toFixed(1)}" ry="8.5" fill="#B94F71" opacity=".14"/>
+          <image href="${COUPLE_ASSET}" x="${(-width / 2).toFixed(1)}" y="${(-height).toFixed(1)}" width="${width.toFixed(1)}" height="${height}" preserveAspectRatio="xMidYMid meet"/>
         </g>
       </g>
     </g>`;
