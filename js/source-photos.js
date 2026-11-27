@@ -34,10 +34,7 @@ window.SOURCE_PHOTOS = [
   {"src": "photos/32.jpg", "w": 1052, "h": 1400, "folder": "5", "file": "IMG20260301114456_01.jpg"},
   {"src": "photos/33.jpg", "w": 1050, "h": 1400, "folder": "5", "file": "IMG20260301115348.jpg"},
   {"src": "photos/34.jpg", "w": 1400, "h": 1050, "folder": "6", "file": "IMG20260904192329.jpg"},
-  {"src": "photos/35.jpg", "w": 1400, "h": 1050, "folder": "6", "file": "IMG20260904200056.jpg"},
-  {"src": "photos/36.jpg", "w": 1400, "h": 1050, "folder": "6", "file": "IMG20260904200102.jpg"},
   {"src": "photos/37.jpg", "w": 1400, "h": 1050, "folder": "6", "file": "IMG20260904200114.jpg"},
   {"src": "photos/38.jpg", "w": 1050, "h": 1400, "folder": "6", "file": "IMG20260905122107.jpg"},
-  {"src": "photos/39.jpg", "w": 1050, "h": 1400, "folder": "6", "file": "IMG20260905122127.jpg"},
   {"src": "photos/40.jpg", "w": 1050, "h": 1400, "folder": "6", "file": "IMG20260905122134.jpg"},
 ];
