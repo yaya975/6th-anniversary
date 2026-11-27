@@ -284,6 +284,7 @@
         caption: "",
         width: Number(row.w) || 0,
         height: Number(row.h) || 0,
+        thumb: row.thumb || "",
         folder: row.folder || "",
         isSource: true
       }));
@@ -394,9 +395,31 @@
     if (!node || node.loaded) return;
     const image = node.memory && node.memory.image;
     if (!image) return;
-    if (!image.getAttribute("href")) {
-      const src = image.getAttribute("data-src");
-      if (src) image.setAttribute("href", src);
+    const src = image.getAttribute("data-src");
+    if (!src) return;
+
+    if (image.getAttribute("data-thumb") === "1") {
+      // Show the inline preview immediately, then swap in the full photo once
+      // it has downloaded and decoded. This keeps later cards from sitting blank.
+      const preloader = new Image();
+      preloader.decoding = "async";
+      const swap = () => {
+        image.setAttribute("href", src);
+        image.removeAttribute("data-thumb");
+      };
+      preloader.onload = () => {
+        if (typeof preloader.decode === "function") {
+          preloader.decode().then(swap).catch(swap);
+        } else {
+          swap();
+        }
+      };
+      preloader.onerror = () => {
+        // Keep the preview if the full photo cannot be loaded.
+      };
+      preloader.src = src;
+    } else if (!image.getAttribute("href")) {
+      image.setAttribute("href", src);
     }
     node.loaded = true;
   }

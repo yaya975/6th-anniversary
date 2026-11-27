@@ -672,6 +672,8 @@
     const W = dispW || 220;
     const H = dispH || 180;
     const href = esc(photo.src);
+    const thumb = photo.thumb ? esc(photo.thumb) : "";
+    const preview = thumb ? ` href="${thumb}" data-thumb="1"` : "";
     const radius = Math.min(10, Math.min(W, H) * 0.04);
 
     const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -687,7 +689,7 @@
             <rect x="${-W}" y="${-H}" width="${W}" height="${H}" rx="${radius}"/>
           </clipPath>
           <rect x="${-W}" y="${-H}" width="${W}" height="${H}" rx="${radius}" fill="#fff7ee"/>
-          <image class="memory-photo" data-src="${href}" x="${-W}" y="${-H}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})"/>
+          <image class="memory-photo"${preview} data-src="${href}" x="${-W}" y="${-H}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})"/>
           <rect x="${-W}" y="${-H}" width="${W}" height="${H}" rx="${radius}" fill="none" stroke="#fff8ef" stroke-width="2.6" opacity=".92"/>
           <rect x="${-W + 1.4}" y="${-H + 1.4}" width="${W - 2.8}" height="${H - 2.8}" rx="${Math.max(2, radius - 1.4)}" fill="none" stroke="#e7c8d1" stroke-width=".7" opacity=".55"/>
           <rect class="memory-hit" x="${-W}" y="${-H}" width="${W}" height="${H}" rx="${radius}" fill="transparent" tabindex="0" role="button" aria-label="查看第 ${index + 1} 张照片"/>
