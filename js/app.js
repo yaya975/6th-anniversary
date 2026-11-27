@@ -102,6 +102,7 @@
     camera: { x: 0, y: 0 },
     cameraReady: false,
     couple: null,
+    activePhoto: null,
     particles: [],
     trailAccumulator: 0,
     lastTrailAt: 0,
@@ -116,6 +117,7 @@
     pendingDeletes: new Set(),
     pendingClear: false,
     photoBaseline: "",
+    lastWorldTransform: "",
     lastFocusedHit: null,
     lastEndingStats: null
   };
@@ -351,8 +353,8 @@
 
   function focusPoint() {
     return {
-      x: state.W < 760 ? state.W * 0.72 : state.W * 0.58,
-      y: state.H * 0.72
+      x: state.W < 760 ? state.W * 0.59 : state.W * 0.55,
+      y: state.H * (state.W < 760 ? 0.76 : 0.74)
     };
   }
 
@@ -373,10 +375,11 @@
   }
 
   function applyWorldTransform() {
-    el.world.setAttribute(
-      "transform",
-      `translate(${state.camera.x.toFixed(2)} ${state.camera.y.toFixed(2)}) scale(${state.scale.toFixed(4)})`
-    );
+    const transform = `translate(${state.camera.x.toFixed(2)} ${state.camera.y.toFixed(2)}) scale(${state.scale.toFixed(4)})`;
+    if (transform !== state.lastWorldTransform) {
+      el.world.setAttribute("transform", transform);
+      state.lastWorldTransform = transform;
+    }
   }
 
   function clearScene() {
@@ -388,25 +391,38 @@
     state.trailAccumulator = 0;
   }
 
-  function loadNearbyPhotos() {
-    const margin = 900;
-    for (const node of state.nodes) {
-      if (!node.memory || !node.memory.image) continue;
-      const pinScreen = state.camera.x + node.x * state.scale;
-      const leftScreen = pinScreen - node.width * state.scale;
+  function loadPhotoImage(node) {
+    if (!node || node.loaded) return;
+    const image = node.memory && node.memory.image;
+    if (!image) return;
+    if (!image.getAttribute("href")) {
+      const src = image.getAttribute("data-src");
+      if (src) image.setAttribute("href", src);
+    }
+    node.loaded = true;
+  }
 
-      if (!node.loaded && !node.retired && pinScreen > -margin && leftScreen < state.W + margin) {
-        const src = node.memory.image.getAttribute("data-src");
-        if (src) node.memory.image.setAttribute("href", src);
-        node.loaded = true;
-      }
+  function releasePhotoImage(node) {
+    if (!node || !node.loaded) return;
+    const image = node.memory && node.memory.image;
+    if (image) image.removeAttribute("href");
+    node.loaded = false;
+  }
 
-      // Release images that are now far behind the walking pair.
-      if (node.loaded && leftScreen < -margin * 1.5) {
-        node.memory.image.removeAttribute("href");
-        node.loaded = false;
-        node.retired = true;
-      }
+  function applyPhotoVisibility(node, opacity) {
+    const memory = node.memory;
+    if (!memory) return;
+    const rounded = Math.round(opacity * 100) / 100;
+    if (node._opacity !== rounded) {
+      memory.group.setAttribute("opacity", rounded.toFixed(2));
+      node._opacity = rounded;
+    }
+    const visible = opacity > 0.18;
+    if (node._visible !== visible) {
+      memory.group.classList.toggle("is-revealed", visible);
+      memory.group.style.pointerEvents = visible ? "auto" : "none";
+      if (memory.hit) memory.hit.style.pointerEvents = visible ? "auto" : "none";
+      node._visible = visible;
     }
   }
 
@@ -526,9 +542,10 @@
 
     state.cameraReady = false;
     snapCamera();
+    state.activePhoto = null;
     updateCouple(performance.now(), 0, true);
     updateCamera(0.016, true);
-    loadNearbyPhotos();
+    updatePhotoMoment();
     updateHud(true);
 
     if (state.complete) {
@@ -624,29 +641,41 @@
       }
     }
 
-    for (const node of state.nodes) {
-      let opacity = 0;
-      if (node === nearest) {
-        const half = node.width / 2;
-        if (nearestDist <= half) {
-          opacity = 1;
-        } else {
-          const fade = 34;
-          opacity = clamp(1 - (nearestDist - half) / fade, 0, 1);
+    let active = null;
+    let opacity = 0;
+    if (nearest) {
+      const half = nearest.width / 2;
+      if (nearestDist <= half) {
+        active = nearest;
+        opacity = 1;
+      } else if (nearestDist < half + 34) {
+        active = nearest;
+        opacity = 1 - (nearestDist - half) / 34;
+      }
+    }
+
+    if (state.activePhoto !== active) {
+      if (state.activePhoto) applyPhotoVisibility(state.activePhoto, 0);
+      state.activePhoto = active;
+
+      if (active) {
+        // Keep only the current/next picture decoded; release old ones.
+        for (const node of state.nodes) {
+          if (node.loaded && node.index < active.index - 1) releasePhotoImage(node);
         }
       }
+    }
 
-      const memory = node.memory;
-      const visible = opacity > 0.18;
-      memory.group.setAttribute("opacity", opacity.toFixed(3));
-      memory.group.classList.toggle("is-revealed", visible);
-      memory.group.style.pointerEvents = visible ? "auto" : "none";
-      if (memory.hit) memory.hit.style.pointerEvents = visible ? "auto" : "none";
-
-      if (opacity > 0.01 && memory.image && !memory.image.getAttribute("href")) {
-        const src = memory.image.getAttribute("data-src");
-        if (src) memory.image.setAttribute("href", src);
-      }
+    if (active) {
+      loadPhotoImage(active);
+      const next = state.nodes[active.index + 1];
+      if (next) loadPhotoImage(next);
+      applyPhotoVisibility(active, opacity);
+    } else if (nearest) {
+      // Preload the upcoming photo so it is ready when it appears overhead.
+      loadPhotoImage(nearest);
+      const next = state.nodes[nearest.index + 1];
+      if (next) loadPhotoImage(next);
     }
   }
 
@@ -725,9 +754,7 @@
     if (!state.nodes.length) return;
 
     updateCouple(now, dt, false);
-    loadNearbyPhotos();
     updatePhotoMoment();
-
     updateHud(false, now);
   }
 
@@ -1784,7 +1811,7 @@
       state.cameraReady = false;
       snapCamera();
       updateCouple(performance.now(), 0, true);
-      loadNearbyPhotos();
+      updatePhotoMoment();
       updateHud(true);
       if (state.complete) finishJourney(performance.now());
     }
