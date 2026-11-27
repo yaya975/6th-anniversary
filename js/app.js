@@ -402,13 +402,6 @@
     node.loaded = true;
   }
 
-  function releasePhotoImage(node) {
-    if (!node || !node.loaded) return;
-    const image = node.memory && node.memory.image;
-    if (image) image.removeAttribute("href");
-    node.loaded = false;
-  }
-
   function applyPhotoVisibility(node, opacity) {
     const memory = node.memory;
     if (!memory) return;
@@ -519,6 +512,9 @@
         loaded: false
       };
     });
+
+    // Load all photos at once so nothing has to appear mid-load on mobile.
+    for (const node of state.nodes) loadPhotoImage(node);
 
     const couple = buildImageCouple(el.couple);
     state.couple = couple;
@@ -658,24 +654,10 @@
       if (state.activePhoto) applyPhotoVisibility(state.activePhoto, 0);
       state.activePhoto = active;
 
-      if (active) {
-        // Keep only the current/next picture decoded; release old ones.
-        for (const node of state.nodes) {
-          if (node.loaded && node.index < active.index - 1) releasePhotoImage(node);
-        }
-      }
     }
 
     if (active) {
-      loadPhotoImage(active);
-      const next = state.nodes[active.index + 1];
-      if (next) loadPhotoImage(next);
       applyPhotoVisibility(active, opacity);
-    } else if (nearest) {
-      // Preload the upcoming photo so it is ready when it appears overhead.
-      loadPhotoImage(nearest);
-      const next = state.nodes[nearest.index + 1];
-      if (next) loadPhotoImage(next);
     }
   }
 
